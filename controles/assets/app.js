@@ -1,5 +1,5 @@
 // === Config ===
-const API_BASE = "http://127.0.0.1:5500/api"; // Cambia si usas otra IP o puerto
+const API_BASE = "http://34.234.40.49:5500/api"; // Cambia si usas otra IP o puerto
 
 // Catálogo local
 const CATALOGO = {
@@ -150,3 +150,4 @@ window.addEventListener("DOMContentLoaded", () => {
   });
   refrescarUltimo();
 });
+
