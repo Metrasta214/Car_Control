@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reconocimiento de voz — Instrucciones (OpenAI)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ⚠️ Modal de advertencia -->
+  <div id="micModal" class="modal">
+    <div class="modal-card">
+      <h2>Permiso de micrófono</h2>
+      <p>Esta aplicación necesita acceso al micrófono. Después de concederlo, di <b>“Álvaro”</b> para activar la detección de instrucciones.</p>
+      <button id="btnAllow" class="btn">Entendido</button>
+    </div>
+  </div>
+
+  <main class="container">
+    <header class="header">
+      <h1>Reconocimiento de voz</h1>
+      <p class="subtitle">Esperando la palabra clave <b>“Álvaro”</b> para activar.</p>
+    </header>
+
+    <section class="panel">
+      <div class="status">
+        <div><span class="pill" id="micState">Mic OFF</span></div>
+        <div><span class="pill" id="apiState">API: …</span></div>
+        <div id="micAnim" class="mic-anim" title="Grabando"></div>
+        <button id="btnReset" class="btn" style="margin-left:8px">Reiniciar</button>
+      </div>
+
+      <div class="cards">
+        <div class="card">
+          <h3>Último texto oído</h3>
+          <p id="lastHeard" class="mono">—</p>
+        </div>
+        <div class="card">
+          <h3>Instrucciones detectadas (IA)</h3>
+          <p id="detected" class="mono">—</p>
+        </div>
+      </div>
+
+      <details class="help" open>
+        <summary>Instrucciones disponibles (11)</summary>
+        <table class="table mono">
+          <thead>
+            <tr><th>No</th><th>Dirección</th><th>Clave</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>Adelante</td><td>ADELANTE</td></tr>
+            <tr><td>2</td><td>Atrás</td><td>ATRAS</td></tr>
+            <tr><td>3</td><td>Detener</td><td>DETENER</td></tr>
+            <tr><td>4</td><td>Vuelta adelante derecha</td><td>V_ADE_DER</td></tr>
+            <tr><td>5</td><td>Vuelta adelante izquierda</td><td>V_ADE_IZQ</td></tr>
+            <tr><td>6</td><td>Vuelta atrás derecha</td><td>V_ATR_DER</td></tr>
+            <tr><td>7</td><td>Vuelta atrás izquierda</td><td>V_ATR_IZQ</td></tr>
+            <tr><td>8</td><td>Giro 90° derecha</td><td>G_90_DER</td></tr>
+            <tr><td>9</td><td>Giro 90° izquierda</td><td>G_90_IZQ</td></tr>
+            <tr><td>10</td><td>Giro 360° derecha</td><td>G_360_DER</td></tr>
+            <tr><td>11</td><td>Giro 360° izquierda</td><td>G_360_IZQ</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </section>
+
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
