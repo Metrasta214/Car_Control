@@ -1,5 +1,5 @@
 // === CONFIGURACIÓN ===
-const API_BASE = "https://310f84bbc7e4.ngrok-free.app/api"; // Cambia si tu URL de ngrok cambia
+const API_BASE = "http://34.234.40.49:5500/api"; // Cambia si tu URL de ngrok cambia
 
 // === CATÁLOGO LOCAL ===
 const CATALOGO = {
@@ -170,6 +170,7 @@ window.addEventListener("DOMContentLoaded", () => {
   });
   refrescarUltimo();
 });
+
 
 
 
