@@ -1,7 +1,7 @@
-// === Config ===
-const API_BASE = "https://691d2a0b139d.ngrok-free.app/api"; // Cambia si usas otra IP o puerto
+// === CONFIGURACIÓN ===
+const API_BASE = "https://691d2a0b139d.ngrok-free.app/api"; // Cambia si tu URL de ngrok cambia
 
-// Catálogo local
+// === CATÁLOGO LOCAL ===
 const CATALOGO = {
   1: "Adelante",
   2: "Atrás",
@@ -16,12 +16,12 @@ const CATALOGO = {
   11: "Giro 360° izquierda",
 };
 
-// === UI ===
+// === ELEMENTOS UI ===
 const statusEl = document.getElementById("status");
 const tsEl = document.getElementById("timestamp");
 const toastEl = document.getElementById("toast");
 const toastMsg = document.getElementById("toast-msg");
-const toast = new bootstrap.Toast(toastEl, { delay: 2000 });
+const toast = new bootstrap.Toast(toastEl, { delay: 2500 });
 
 function showToast(msg) {
   toastMsg.textContent = msg;
@@ -38,20 +38,35 @@ async function postMovimiento(id_movimiento) {
   const url = `${API_BASE}/movimientos`;
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    },
+    mode: "cors",
     body: JSON.stringify({ id_movimiento }),
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`POST ${url} → ${res.status} ${text}`);
+  }
   return res.json();
 }
 
 async function getUltimoMovimiento() {
-  const res = await fetch(`${API_BASE}/movimientos/ultimo`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const url = `${API_BASE}/movimientos/ultimo`;
+  const res = await fetch(url, {
+    method: "GET",
+    headers: { "Accept": "application/json" },
+    mode: "cors",
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`GET ${url} → ${res.status} ${text}`);
+  }
   return res.json();
 }
 
-// === Controladores ===
+// === CONTROLADORES ===
 async function enviarMovimiento(idMov) {
   try {
     setStatus(CATALOGO[idMov]);
@@ -59,6 +74,7 @@ async function enviarMovimiento(idMov) {
     showToast(`Enviado: ${CATALOGO[idMov]}`);
     await refrescarUltimo();
   } catch (e) {
+    console.error("❌ Error al enviar:", e);
     showToast(`Error: ${e.message}`);
   }
 }
@@ -68,44 +84,46 @@ async function refrescarUltimo() {
     const { data } = await getUltimoMovimiento();
     if (data) setStatus(data.movimiento, data.fecha_hora);
   } catch (e) {
+    console.warn("⚠️ Error al actualizar:", e);
     showToast(`No se pudo consultar: ${e.message}`);
   }
 }
 
-// === Eventos ===
-document.querySelectorAll("[data-mov]").forEach(btn =>
-  btn.addEventListener("click", () => enviarMovimiento(Number(btn.dataset.mov)))
-);
-
-// === Teclado ===
-document.addEventListener("keydown", e => {
-  const k = e.key.toLowerCase();
-  if (k === "w") enviarMovimiento(1);
-  if (k === "s") enviarMovimiento(2);
-  if (k === " ") enviarMovimiento(3);
-  if (k === "e") enviarMovimiento(4);
-  if (k === "q") enviarMovimiento(5);
-  if (k === "c") enviarMovimiento(6);
-  if (k === "z") enviarMovimiento(7);
-  if (k === "d") enviarMovimiento(8);
-  if (k === "a") enviarMovimiento(9);
-  if (k === "x") enviarMovimiento(10);
-  if (k === "y") enviarMovimiento(11);
+// === EVENTOS ===
+document.querySelectorAll("[data-mov]").forEach(btn => {
+  btn.addEventListener("click", () => enviarMovimiento(Number(btn.dataset.mov)));
 });
 
-// === Monitoreo ===
+// === ATAJOS DE TECLADO ===
+document.addEventListener("keydown", e => {
+  const k = e.key.toLowerCase();
+  const map = {
+    w: 1, s: 2, " ": 3,
+    e: 4, q: 5,
+    c: 6, z: 7,
+    d: 8, a: 9,
+    x: 10, y: 11,
+  };
+  if (map[k]) enviarMovimiento(map[k]);
+});
+
+// === MONITOREO AUTOMÁTICO ===
 const MONITOR_MS = 2000;
 let monitorTimer = null;
 
 async function updateMonitorOnce() {
   try {
-    const res = await fetch(`${API_BASE}/movimientos/ultimos?n=10`);
+    const url = `${API_BASE}/movimientos/ultimos?n=10`;
+    const res = await fetch(url, { headers: { "Accept": "application/json" }, mode: "cors" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const rows = data?.data ?? [];
     renderTablaMovs(rows);
     await refrescarUltimo();
-    document.getElementById("monitor-foot").textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+    document.getElementById("monitor-foot").textContent =
+      `Actualizado: ${new Date().toLocaleTimeString()}`;
   } catch (e) {
+    console.error("⚠️ Error monitor:", e);
     showToast(`Error: ${e.message}`);
   }
 }
@@ -118,10 +136,11 @@ function renderTablaMovs(rows) {
   }
   tbody.innerHTML = rows.map(r => `
     <tr>
-      <td>${r.id}</td>
-      <td>${r.movimiento}</td>
-      <td>${r.fecha_hora}</td>
-    </tr>`).join("");
+      <td>${r.id ?? "-"}</td>
+      <td>${r.movimiento ?? "—"}</td>
+      <td>${r.fecha_hora ? new Date(r.fecha_hora).toLocaleString() : "—"}</td>
+    </tr>
+  `).join("");
 }
 
 function startMonitor() {
@@ -143,6 +162,7 @@ function stopMonitor() {
   btn.dataset.active = "0";
 }
 
+// === INICIO ===
 window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-monitor-once").addEventListener("click", updateMonitorOnce);
   document.getElementById("btn-monitor-toggle").addEventListener("click", e => {
@@ -150,6 +170,8 @@ window.addEventListener("DOMContentLoaded", () => {
   });
   refrescarUltimo();
 });
+
+
 
 
 
