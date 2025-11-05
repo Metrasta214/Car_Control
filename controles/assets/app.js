@@ -1,5 +1,5 @@
 // === Config ===
-const API_BASE = "https://7ae8ef631b8f.ngrok-free.app"; // Cambia si usas otra IP o puerto
+const API_BASE = "https://f8c37c894646.ngrok-free.app"; // Cambia si usas otra IP o puerto
 
 // Catálogo local
 const CATALOGO = {
@@ -150,5 +150,6 @@ window.addEventListener("DOMContentLoaded", () => {
   });
   refrescarUltimo();
 });
+
 
 
