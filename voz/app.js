@@ -180,7 +180,7 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 });
 
 // === MONITOREO DE MOVIMIENTOS (compartido con Controles) ===
-const API_BASE = "http://127.0.0.:5500/api"; // cambia por tu IP o dominio
+const API_BASE = "http://34.234.40.49:5500/api"; // cambia por tu IP o dominio
 
 const MONITOR_MS = 2000;
 let monitorTimer = null;
@@ -245,4 +245,5 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 });
+
 
