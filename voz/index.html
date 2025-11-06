@@ -63,6 +63,34 @@
         </table>
       </details>
     </section>
+<!-- === Monitoreo de movimientos === -->
+<section class="monitor mt-4">
+  <h2>Monitoreo de movimientos</h2>
+  <div class="controls d-flex justify-content-center gap-2 mb-2">
+    <button id="btn-monitor-toggle" class="btn btn-outline-primary btn-sm" data-active="0">
+      <i class="bi bi-play-circle"></i> Auto (2s)
+    </button>
+    <button id="btn-monitor-once" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-clockwise"></i> Actualizar
+    </button>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Movimiento</th>
+          <th>Fecha/Hora</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-movs">
+        <tr><td colspan="3" class="text-center text-muted">Sin datos</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <small class="text-muted d-block mt-2" id="monitor-foot">—</small>
+</section>
 
 
   </main>
@@ -70,3 +98,4 @@
   <script src="app.js"></script>
 </body>
 </html>
+
