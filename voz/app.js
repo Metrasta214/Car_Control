@@ -178,3 +178,71 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   document.getElementById("btnAllow").addEventListener("click",()=>{ document.getElementById("micModal").classList.remove("show"); resetAll(); });
   document.getElementById("btnReset").addEventListener("click", resetAll);
 });
+
+// === MONITOREO DE MOVIMIENTOS (compartido con Controles) ===
+const API_BASE = "http://127.0.0.:5500/api"; // cambia por tu IP o dominio
+
+const MONITOR_MS = 2000;
+let monitorTimer = null;
+
+async function updateMonitorOnce() {
+  try {
+    const res = await fetch(`${API_BASE}/movimientos/ultimos?n=10`);
+    const data = await res.json();
+    const rows = data?.data ?? [];
+    renderTablaMovs(rows);
+    document.getElementById("monitor-foot").textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+  } catch (e) {
+    console.error("Error al actualizar monitoreo:", e);
+  }
+}
+
+function renderTablaMovs(rows) {
+  const tbody = document.getElementById("tabla-movs");
+  if (!tbody) return;
+  if (!rows?.length) {
+    tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">Sin datos</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows
+    .map(
+      (r) => `
+      <tr>
+        <td>${r.id}</td>
+        <td>${r.movimiento}</td>
+        <td>${r.fecha_hora}</td>
+      </tr>`
+    )
+    .join("");
+}
+
+function startMonitor() {
+  if (monitorTimer) return;
+  updateMonitorOnce();
+  monitorTimer = setInterval(updateMonitorOnce, MONITOR_MS);
+  const btn = document.getElementById("btn-monitor-toggle");
+  btn.classList.replace("btn-outline-primary", "btn-primary");
+  btn.textContent = "Detener";
+  btn.dataset.active = "1";
+}
+
+function stopMonitor() {
+  clearInterval(monitorTimer);
+  monitorTimer = null;
+  const btn = document.getElementById("btn-monitor-toggle");
+  btn.classList.replace("btn-primary", "btn-outline-primary");
+  btn.textContent = "Auto (2s)";
+  btn.dataset.active = "0";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const btnAuto = document.getElementById("btn-monitor-toggle");
+  const btnOnce = document.getElementById("btn-monitor-once");
+  if (btnAuto && btnOnce) {
+    btnOnce.addEventListener("click", updateMonitorOnce);
+    btnAuto.addEventListener("click", (e) =>
+      e.target.dataset.active === "1" ? stopMonitor() : startMonitor()
+    );
+  }
+});
+
