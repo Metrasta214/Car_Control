@@ -180,8 +180,40 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 });
 
 // === MONITOREO DE MOVIMIENTOS (compartido con Controles) ===
-const API_BASE = "http://34.234.40.49:5500/api"; // cambia por tu IP o dominio
+// === Configuración general de la API (igual que en Controles) ===
+const API_BASE = "http://34.234.40.49:5500/api"; // cambia por tu IP real o dominio
 
+// === Mapeo de claves de voz a IDs de movimiento ===
+function obtenerIdMovimiento(clave) {
+  const mapa = {
+    ADELANTE: 1, ATRAS: 2, DETENER: 3,
+    V_ADE_DER: 4, V_ADE_IZQ: 5,
+    V_ATR_DER: 6, V_ATR_IZQ: 7,
+    G_90_DER: 8, G_90_IZQ: 9,
+    G_360_DER: 10, G_360_IZQ: 11
+  };
+  return mapa[clave] || null;
+}
+
+// === Enviar movimiento detectado por voz ===
+async function enviarMovimientoPorVoz(id, clave) {
+  try {
+    const res = await fetch(`${API_BASE}/movimientos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_movimiento: id }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    console.log(`✅ Movimiento por voz enviado: ${clave} (${id})`);
+
+    // 🔄 Actualiza la tabla de monitoreo después de enviar
+    await updateMonitorOnce();
+  } catch (e) {
+    console.error("Error al enviar movimiento:", e);
+  }
+}
+
+// === MONITOREO DE MOVIMIENTOS ===
 const MONITOR_MS = 2000;
 let monitorTimer = null;
 
@@ -191,7 +223,8 @@ async function updateMonitorOnce() {
     const data = await res.json();
     const rows = data?.data ?? [];
     renderTablaMovs(rows);
-    document.getElementById("monitor-foot").textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+    document.getElementById("monitor-foot").textContent =
+      `Actualizado: ${new Date().toLocaleTimeString()}`;
   } catch (e) {
     console.error("Error al actualizar monitoreo:", e);
   }
@@ -204,16 +237,13 @@ function renderTablaMovs(rows) {
     tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">Sin datos</td></tr>`;
     return;
   }
-  tbody.innerHTML = rows
-    .map(
-      (r) => `
-      <tr>
-        <td>${r.id}</td>
-        <td>${r.movimiento}</td>
-        <td>${r.fecha_hora}</td>
-      </tr>`
-    )
-    .join("");
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.id}</td>
+      <td>${r.movimiento}</td>
+      <td>${r.fecha_hora}</td>
+    </tr>
+  `).join("");
 }
 
 function startMonitor() {
@@ -240,10 +270,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnOnce = document.getElementById("btn-monitor-once");
   if (btnAuto && btnOnce) {
     btnOnce.addEventListener("click", updateMonitorOnce);
-    btnAuto.addEventListener("click", (e) =>
+    btnAuto.addEventListener("click", e =>
       e.target.dataset.active === "1" ? stopMonitor() : startMonitor()
     );
   }
 });
+
 
 
