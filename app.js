@@ -34,10 +34,12 @@ function setStatus(texto, fecha = null) {
 // API Movimientos
 // =========================
 async function postMovimiento(id_movimiento) {
+  id_movimiento = Number(id_movimiento);   // ⬅ AQUI EL FIX IMPORTANTE
+
   const res = await fetch(`${API_BASE}/movimientos`, {
     method: "POST",
     headers: { "Content-Type":"application/json" },
-    body: JSON.stringify({ id_movimiento })   // ✔ CORRECTO
+    body: JSON.stringify({ id_movimiento })
   });
 
   if (!res.ok) {
@@ -58,7 +60,7 @@ async function getUltimoMovimiento() {
 async function getMovimientos(n = 20) {
   const res = await fetch(`${API_BASE}/movimientos/historial?limit=${n}&offset=0`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json(); 
+  return res.json();
 }
 
 // =========================
@@ -117,6 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // =========================
 async function enviarMovimiento(idMov) {
   try {
+    idMov = Number(idMov);  // ⬅ FIX
     setStatus(CATALOGO[idMov]);
     await postMovimiento(idMov);
     showToast(`Enviado: ${CATALOGO[idMov]}`);
@@ -166,7 +169,7 @@ document.getElementById("btnShowControl").onclick = () => showSection("control")
 document.getElementById("btnShowVoz").onclick = () => showSection("voz");
 
 // =============================================================
-// PANEL DE VOZ
+// PANEL DE VOZ (CORREGIDO)
 // =============================================================
 const OPENAI_MODEL = "gpt-4o-mini";
 const WAKE_WORD = "alvaro";
@@ -184,25 +187,6 @@ const COMMANDS = [
   { id:10, key: "giro 360 derecha" },
   { id:11, key: "giro 360 izquierda" },
 ];
-
-// Obtener API key desde MockAPI
-let KEY_CACHE = null, KEY_TIME = 0;
-const KEY_TTL = 30 * 60 * 1000;
-
-async function obtenerApiKey(){
-  const now = Date.now();
-
-  if(KEY_CACHE && now - KEY_TIME < KEY_TTL) return KEY_CACHE;
-
-  const res = await fetch("https://68e538708e116898997ee557.mockapi.io/apikey");
-  const data = await res.json();
-  const apiKey = data[0]?.apikey?.trim();
-
-  KEY_CACHE = apiKey;
-  KEY_TIME = now;
-
-  return apiKey;
-}
 
 // Reconocimiento de Voz
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -243,87 +227,48 @@ function initRecognition(){
     const order = text.slice(idx + WAKE_WORD.length).trim();
     if(order.length < 1) return;
 
-    const final = e.results[e.resultIndex].isFinal;
-    if(final) classifyAndAct(order);
+    if(e.results[e.resultIndex].isFinal)
+      classifyAndAct(order);
   };
 
   rec.onerror = () => setMicState(false);
   rec.onend = () => { if(listening) rec.start(); };
 }
 
-// Normalizador
-function normalize(s){
-  return s.toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-    .replace(/[^\w\s]/g," ")
-    .replace(/\s+/g," ")
-    .trim();
-}
-
-// Clasificador local de respaldo
+// Clasificador local para respaldo
 function localClassify(t){
-  t = normalize(t);
+  t = t.toLowerCase();
 
-  if(t.includes("detener") || t.includes("alto")) return {id:3, key:"detener"};
+  if(t.includes("detener")) return {id:3, key:"detener"};
   if(t.includes("adelante")) return {id:1, key:"adelante"};
-  if(t.includes("atras") || t.includes("retrocede")) return {id:2, key:"atrás"};
+  if(t.includes("atrás") || t.includes("atras")) return {id:2, key:"atrás"};
 
   return {id:3, key:"detener"};
 }
 
-// Clasificación con OpenAI
-async function classifyAndAct(txt){
-  el.detected.textContent = "Analizando...";
-  el.action.textContent = "…";
+// Acción final
+function classifyAndAct(text){
+  const local = localClassify(text);
 
-  try {
-    const apiKey = await obtenerApiKey();
-
-    const payload = {
-      model: OPENAI_MODEL,
-      messages:[
-        {role:"system", content:`Responde SOLO {"command_id":1..11, "command_key":"texto"}`},
-        {role:"user", content:txt}
-      ],
-      temperature:0,
-      response_format:{type:"json_object"}
-    };
-
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization":`Bearer ${apiKey}`
-      },
-      body:JSON.stringify(payload)
-    });
-
-    const data = await res.json();
-    const raw = data.choices[0].message.content;
-    const parsed = JSON.parse(raw);
-
-    const cmd = COMMANDS.find(c => c.id === parsed.command_id);
-    const key = cmd?.key || parsed.command_key;
-
-    el.detected.textContent = `${parsed.command_id} — ${key}`;
-
-    performAction(parsed.command_id, key);
-
-  } catch (e) {
-    const f = localClassify(txt);
-    el.detected.textContent = `${f.id} — ${f.key}`;
-    performAction(f.id, f.key);
-  }
+  el.detected.textContent = `${local.id} — ${local.key}`;
+  performAction(local.id, local.key);
 }
 
-// Actualizar estatus en panel de voz
-function setStatusVoz(texto, fecha = null){
+// Actualizar estatus voz
+function setStatusVoz(texto, fecha=null){
   el.statusVoz.textContent = (texto || "—").toUpperCase();
   el.timestampVoz.textContent = fecha ? new Date(fecha).toLocaleString() : "";
 }
 
-// Ejecutar la orden
+// Ejecutar movimiento
 function performAction(id, key){
+  id = Number(id);   // ⬅ FIX CRÍTICO
+
+  if(!id || id < 1 || id > 11){
+    showToast("Comando inválido");
+    return;
+  }
+
   el.action.textContent = `Ejecutando: ${key}`;
 
   postMovimiento(id)
@@ -332,10 +277,12 @@ function performAction(id, key){
       cargarMovimientosGlobal();
       showToast(`Registrado: ${key}`);
     })
-    .catch(e => showToast("Error registrando"));
+    .catch(e => {
+      console.error("ERROR:", e);
+      showToast("Error registrando");
+    });
 }
 
-// Inicio
 document.addEventListener("DOMContentLoaded", () => {
   initRecognition();
 
