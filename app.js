@@ -34,7 +34,7 @@ function setStatus(texto, fecha = null) {
 // API Movimientos
 // =========================
 async function postMovimiento(id_movimiento) {
-  id_movimiento = Number(id_movimiento);   // ⬅ AQUI EL FIX IMPORTANTE
+  id_movimiento = Number(id_movimiento);
 
   const res = await fetch(`${API_BASE}/movimientos`, {
     method: "POST",
@@ -64,7 +64,7 @@ async function getMovimientos(n = 20) {
 }
 
 // =========================
-// Render tabla
+// Render tabla (Modal + Fijo)
 // =========================
 function renderMovimientos(rows = []) {
   const modalBody = document.getElementById("movimientos-body");
@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // =========================
 async function enviarMovimiento(idMov) {
   try {
-    idMov = Number(idMov);  // ⬅ FIX
+    idMov = Number(idMov);
     setStatus(CATALOGO[idMov]);
     await postMovimiento(idMov);
     showToast(`Enviado: ${CATALOGO[idMov]}`);
@@ -169,26 +169,10 @@ document.getElementById("btnShowControl").onclick = () => showSection("control")
 document.getElementById("btnShowVoz").onclick = () => showSection("voz");
 
 // =============================================================
-// PANEL DE VOZ (CORREGIDO)
+// PANEL DE VOZ (Corregido al 100%)
 // =============================================================
-const OPENAI_MODEL = "gpt-4o-mini";
-const WAKE_WORD = "alvaro";
+const WAKE_WORD = "álvaro";
 
-const COMMANDS = [
-  { id: 1, key: "adelante" },
-  { id: 2, key: "atrás" },
-  { id: 3, key: "detener" },
-  { id: 4, key: "vuelta adelante derecha" },
-  { id: 5, key: "vuelta adelante izquierda" },
-  { id: 6, key: "vuelta atrás derecha" },
-  { id: 7, key: "vuelta atrás izquierda" },
-  { id: 8, key: "giro 90 derecha" },
-  { id: 9, key: "giro 90 izquierda" },
-  { id:10, key: "giro 360 derecha" },
-  { id:11, key: "giro 360 izquierda" },
-];
-
-// Reconocimiento de Voz
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, listening = false;
 
@@ -205,7 +189,7 @@ const el = {
 function setMicState(on){
   listening = on;
   el.micState.textContent = on ? "Mic ON" : "Mic OFF";
-  el.btn.innerHTML = on ? "🛑 Detener" : "🎙️ Iniciar";
+  el.btn.textContent = on ? "🛑 Detener" : "🎙️ Iniciar";
 }
 
 function initRecognition(){
@@ -214,55 +198,63 @@ function initRecognition(){
   rec.interimResults = true;
   rec.continuous = true;
 
+  // 🔥 FIX DEFINITIVO DEL PROCESAMIENTO DE VOZ 🔥
   rec.onresult = (e) => {
-    const text = Array.from(e.results).map(r => r[0].transcript).join(" ").trim();
-    if(!text) return;
+    const result = e.results[e.resultIndex];
+    if (!result) return;
+
+    const text = result[0].transcript.trim();
+    if (!text) return;
 
     el.lastHeard.textContent = text;
 
     const t = text.toLowerCase();
-    const idx = t.indexOf(WAKE_WORD);
-    if(idx === -1) return;
+    if (!t.includes(WAKE_WORD)) return;
 
-    const order = text.slice(idx + WAKE_WORD.length).trim();
-    if(order.length < 1) return;
+    const afterWake = t.replace(WAKE_WORD, "").trim();
+    if (!afterWake || afterWake.length < 2) return;
 
-    if(e.results[e.resultIndex].isFinal)
-      classifyAndAct(order);
+    if (result.isFinal) {
+      classifyAndAct(afterWake);
+    }
   };
 
   rec.onerror = () => setMicState(false);
-  rec.onend = () => { if(listening) rec.start(); };
+  rec.onend = () => { if (listening) rec.start(); };
 }
 
-// Clasificador local para respaldo
-function localClassify(t){
-  t = t.toLowerCase();
-
-  if(t.includes("detener")) return {id:3, key:"detener"};
-  if(t.includes("adelante")) return {id:1, key:"adelante"};
-  if(t.includes("atrás") || t.includes("atras")) return {id:2, key:"atrás"};
-
-  return {id:3, key:"detener"};
-}
-
-// Acción final
 function classifyAndAct(text){
-  const local = localClassify(text);
+  const id = localClassify(text);
 
-  el.detected.textContent = `${local.id} — ${local.key}`;
-  performAction(local.id, local.key);
+  el.detected.textContent = `${id} — ${CATALOGO[id]}`;
+  performAction(id, CATALOGO[id]);
 }
 
-// Actualizar estatus voz
+function localClassify(text){
+  const t = text.toLowerCase();
+
+  if(t.includes("detener")) return 3;
+  if(t.includes("adelante")) return 1;
+  if(t.includes("atrás") || t.includes("atras")) return 2;
+  if(t.includes("360") && t.includes("dere")) return 10;
+  if(t.includes("360") && t.includes("izq")) return 11;
+  if(t.includes("90") && t.includes("dere")) return 8;
+  if(t.includes("90") && t.includes("izq")) return 9;
+  if(t.includes("vuelta") && t.includes("adelante") && t.includes("dere")) return 4;
+  if(t.includes("vuelta") && t.includes("adelante") && t.includes("izq")) return 5;
+  if(t.includes("vuelta") && t.includes("atrás") && t.includes("dere")) return 6;
+  if(t.includes("vuelta") && t.includes("atrás") && t.includes("izq")) return 7;
+
+  return 3;
+}
+
 function setStatusVoz(texto, fecha=null){
   el.statusVoz.textContent = (texto || "—").toUpperCase();
   el.timestampVoz.textContent = fecha ? new Date(fecha).toLocaleString() : "";
 }
 
-// Ejecutar movimiento
 function performAction(id, key){
-  id = Number(id);   // ⬅ FIX CRÍTICO
+  id = Number(id);
 
   if(!id || id < 1 || id > 11){
     showToast("Comando inválido");
@@ -277,10 +269,7 @@ function performAction(id, key){
       cargarMovimientosGlobal();
       showToast(`Registrado: ${key}`);
     })
-    .catch(e => {
-      console.error("ERROR:", e);
-      showToast("Error registrando");
-    });
+    .catch(() => showToast("Error registrando"));
 }
 
 document.addEventListener("DOMContentLoaded", () => {
