@@ -150,61 +150,106 @@
     </section>
 
     <!-- ======================================================
-         PANEL DE VOZ — NO CAMBIADO (FUNCIONAL)
+         PANEL DE VOZ 
     ====================================================== -->
 
-    <section id="panel-voz" class="voz mt-4" style="display:none">
-      <div class="voz-wrap">
-        <header class="text-center mb-3">
-          <h2 class="h4 mb-1">Control por voz</h2>
-          <p class="subtitle">Di <strong>Álvaro</strong> y luego tu orden.</p>
-        </header>
+    <section id="panel-voz" class="mt-4" style="display:none">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-header text-center fw-semibold">
+          Control por voz
+        </div>
 
-        <section class="panel">
-          <div class="rowflex">
-            <button id="btnToggle" class="vbtn">🎙️ Iniciar</button>
-            <label class="switch">
-              <input type="checkbox" id="chkTTS" checked />
-              <span>Responder con voz</span>
-            </label>
+        <div class="card-body">
+
+          <p class="text-center mb-4 text-muted">
+            Di <strong>“Álvaro”</strong> seguido de tu orden.
+          </p>
+
+          <!-- Botón de micrófono -->
+          <div class="text-center mb-4">
+            <button id="btnToggle" class="btn btn-dark px-4 py-2">
+              <i class="bi bi-mic-fill"></i> Iniciar escucha
+            </button>
+            <div class="mt-2">
+              <span class="badge bg-secondary" id="micState">Mic OFF</span>
+            </div>
           </div>
 
-          <div class="status">
-            <div><span class="pill" id="micState">Mic OFF</span></div>
-            <div class="wake">Palabra clave: <b>Álvaro</b></div>
+          <!-- Estatus Voz -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-header text-center fw-semibold">
+              Estatus actual
+            </div>
+            <div class="card-body text-center">
+              <div id="status-voz" class="h4 fw-bold text-primary">—</div>
+              <small id="timestamp-voz" class="text-muted"></small>
+            </div>
           </div>
 
-          <div class="cardv estatus-voz">
-            <h3>Estatus</h3>
-            <p id="status-voz" class="mono estatus-voz__texto">—</p>
-            <small id="timestamp-voz" class="estatus-voz__fecha"></small>
+          <!-- Últimas detecciones -->
+          <div class="row g-3">
+
+            <div class="col-12 col-md-4">
+              <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                  <h6 class="fw-semibold">Último texto oído</h6>
+                  <p id="lastHeard" class="text-muted mb-0">—</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                  <h6 class="fw-semibold">Orden detectada</h6>
+                  <p id="detected" class="text-muted mb-0">—</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                  <h6 class="fw-semibold">Acción ejecutada</h6>
+                  <p id="action" class="text-muted mb-0">—</p>
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          <div class="cards">
-            <div class="cardv"><h3>Último texto oído</h3><p id="lastHeard" class="mono">—</p></div>
-            <div class="cardv"><h3>Orden detectada</h3><p id="detected" class="mono">—</p></div>
-            <div class="cardv"><h3>Acción</h3><p id="action" class="mono">—</p></div>
+          <!-- Lista de comandos -->
+          <div class="card shadow-sm mt-4">
+            <div class="card-header fw-semibold">Órdenes disponibles</div>
+            <div class="card-body">
+              <ul class="mb-0">
+                <li>Adelante</li>
+                <li>Atrás</li>
+                <li>Detener</li>
+                <li>Vuelta adelante derecha</li>
+                <li>Vuelta adelante izquierda</li>
+                <li>Vuelta atrás derecha</li>
+                <li>Vuelta atrás izquierda</li>
+                <li>Giro 90 derecha</li>
+                <li>Giro 90 izquierda</li>
+                <li>Giro 360 derecha</li>
+                <li>Giro 360 izquierda</li>
+              </ul>
+            </div>
           </div>
 
-          <details class="help">
-            <summary>Órdenes disponibles</summary>
-            <ol>
-              <li>adelante</li><li>atrás</li><li>detener</li>
-              <li>vuelta adelante derecha</li><li>vuelta adelante izquierda</li>
-              <li>vuelta atrás derecha</li><li>vuelta atrás izquierda</li>
-              <li>giro 90 derecha</li><li>giro 90 izquierda</li>
-              <li>giro 360 derecha</li><li>giro 360 izquierda</li>
-            </ol>
-          </details>
-        </section>
+        </div>
 
-        <footer class="text-center mt-2 footer-voz">
+        <div class="card-footer text-center text-muted">
           <small>Hecho por Álvaro Madrid Morales.</small>
-        </footer>
-      </div>
-    </section>
+        </div>
 
-  </main>
+      </div>
+    </div>
+  </div>
+</section>
 
   <!-- ========== Modal Original (aún funcional) ========== -->
   <div class="modal fade" id="movimientosModal" tabindex="-1">
