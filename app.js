@@ -199,8 +199,9 @@ function showSection(which){
 }
 
 // =========================
-// ---- Panel de Voz (sin TTS) ----
+// ---- Panel de Voz (FUNCIONAL OK) ----
 // =========================
+
 const OPENAI_MODEL = "gpt-4o-mini";
 
 // Comandos
@@ -221,7 +222,7 @@ const COMMANDS = [
 // Palabra clave
 const WAKE_WORD = "alvaro";
 
-// MockAPI key cache
+// API Key MockAPI
 let __OPENAI_KEY_CACHE = null, __OPENAI_KEY_CACHE_TIME = 0;
 const KEY_TTL_MS = 30 * 60 * 1000;
 
@@ -231,8 +232,7 @@ async function obtenerApiKey() {
   if (__OPENAI_KEY_CACHE && (now - __OPENAI_KEY_CACHE_TIME) < KEY_TTL_MS)
     return __OPENAI_KEY_CACHE;
 
-  // PON AQUÍ tu URL real
-  const url = "https://68e538708e116898997ee557.mockapi.io/apikey";
+  const url = "https://68e538708e116898997ee557.mockapi.io/apikey"; // tu URL
 
   const res = await fetch(url);
   if (!res.ok) throw new Error("No pude leer la API Key de MockAPI.");
@@ -241,11 +241,7 @@ async function obtenerApiKey() {
   const first = Array.isArray(data) ? data[0] : data;
 
   const apiKey =
-    first?.apikey ??
-    first?.api_key ??
-    first?.key ??
-    first?.token ??
-    first?.["api key"];
+    first?.apikey ?? first?.api_key ?? first?.key ?? first?.token ?? first?.["api key"];
 
   if (!apiKey) throw new Error("MockAPI no tiene un campo válido con API key.");
 
@@ -255,7 +251,9 @@ async function obtenerApiKey() {
   return __OPENAI_KEY_CACHE;
 }
 
-// Reconocimiento de voz
+// =========================
+// Reconocimiento
+// =========================
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, listening = false;
 
@@ -273,14 +271,8 @@ function setMicState(on){
   listening = on;
   el.micState.textContent = on ? "Mic ON" : "Mic OFF";
 
-  el.micState.classList.remove("bg-secondary","bg-success");
-  el.micState.classList.add(on ? "bg-success" : "bg-secondary");
-
-  el.btn.innerHTML = on
-    ? `<i class="bi bi-stop-circle"></i> Detener escucha`
-    : `<i class="bi bi-mic-fill"></i> Iniciar escucha`;
-
   el.btn.disabled = false;
+  el.btn.textContent = on ? "🛑 Detener" : "🎙️ Iniciar";
 }
 
 function initRecognition(){
@@ -295,10 +287,7 @@ function initRecognition(){
   rec.continuous = true;
 
   rec.onresult = async (e) => {
-    const idx = e.resultIndex;
-
     const transcript = Array.from(e.results)
-      .slice(idx)
       .map(r => r[0].transcript)
       .join(" ")
       .trim();
@@ -324,7 +313,6 @@ function initRecognition(){
   rec.onend = () => { if (listening) rec.start(); };
 }
 
-// Normalizar texto
 function normalize(s){
   return s.toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
@@ -333,24 +321,20 @@ function normalize(s){
     .trim();
 }
 
+// =========================
 // Clasificador local (backup)
+// =========================
 function localClassify(text){
   const t = normalize(text);
-
   if (/\b(detener|alto|stop)\b/.test(t)) return {id:3, key:"detener"};
   if (/\b(adelante|avanza)\b/.test(t)) return {id:1, key:"adelante"};
-  if (/\b(atras|retrocede|reversa)\b/.test(t)) return {id:2, key:"atrás"};
-
-  if (/\b(90|noventa)\b/.test(t) && /\bderech/.test(t)) return {id:8, key:"giro 90 derecha"};
-  if (/\b(90|noventa)\b/.test(t) && /\bizquier/.test(t)) return {id:9, key:"giro 90 izquierda"};
-
-  if (/\b(360|completo)\b/.test(t) && /\bderech/.test(t)) return {id:10, key:"giro 360 derecha"};
-  if (/\b(360|completo)\b/.test(t) && /\bizquier/.test(t)) return {id:11, key:"giro 360 izquierda"};
-
+  if (/\b(atras|reversa|retrocede)\b/.test(t)) return {id:2, key:"atrás"};
   return {id:3, key:"detener"};
 }
 
-// Clasificar orden
+// =========================
+// Clasificación
+// =========================
 async function classifyAndAct(userText){
   el.detected.textContent = "Analizando…";
   el.action.textContent = "…";
@@ -358,20 +342,14 @@ async function classifyAndAct(userText){
   try {
     const apiKey = await obtenerApiKey();
 
-    const systemPrompt = `
-Eres un clasificador de órdenes de un robot.
-Responde SOLO:
-{"command_id": <1..11>, "command_key": "<texto>"}
-    `;
-
     const payload = {
       model: OPENAI_MODEL,
       messages: [
-        { role:"system", content: systemPrompt },
-        { role:"user", content: userText }
+        { role:"system", content:`{"command_id":1..11}` },
+        { role:"user", content:userText }
       ],
       temperature: 0,
-      response_format: { type: "json_object" }
+      response_format: { type:"json_object" }
     };
 
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -383,7 +361,7 @@ Responde SOLO:
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok) throw new Error(`OpenAI HTTP ${res.status}`);
+    if (!res.ok) throw new Error("OpenAI error");
 
     const data = await res.json();
     const raw = data?.choices?.[0]?.message?.content ?? "";
@@ -393,7 +371,6 @@ Responde SOLO:
     const key = match?.key || parsed.command_key || "desconocido";
 
     el.detected.textContent = `${parsed.command_id} — ${key}`;
-
     performAction(parsed.command_id, key);
 
   } catch (err) {
@@ -403,14 +380,14 @@ Responde SOLO:
   }
 }
 
-// Actualizar estatus de voz
+// =========================
+// Ejecutar movimiento
+// =========================
 function setStatusVoz(texto, fecha = null) {
   el.statusVoz.textContent = (texto || "—").toUpperCase();
-  el.timestampVoz.textContent =
-    fecha ? new Date(fecha).toLocaleString() : "";
+  el.timestampVoz.textContent = fecha ? new Date(fecha).toLocaleString() : "";
 }
 
-// Ejecutar la acción detectada
 function performAction(id, key){
   el.action.textContent = `Ejecutando: ${key}`;
 
@@ -423,9 +400,10 @@ function performAction(id, key){
     .catch(() => showToast("Error registrando movimiento"));
 }
 
-// Iniciar reconocimiento
+// =========================
+// Inicializar panel de voz
+// =========================
 document.addEventListener("DOMContentLoaded", () => {
-  initRecognition();
 
   el.btn.addEventListener("click", () => {
     if (!rec){
@@ -436,19 +414,18 @@ document.addEventListener("DOMContentLoaded", () => {
     el.btn.disabled = true;
 
     if (!listening){
-      try {
-        rec.start();
-        setMicState(true);
-      } catch {
-        setMicState(false);
-      }
-
+      rec.start();
+      setMicState(true);
     } else {
-      try { rec.stop(); }
-      finally { setMicState(false); }
+      rec.stop();
+      setMicState(false);
     }
   });
+
+  initRecognition();
 });
+
+
 
 
 
