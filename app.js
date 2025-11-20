@@ -1,7 +1,7 @@
 // =========================
 // Config / Catálogo
 // =========================
-const API_BASE = "http://127.0.0.1:5500/api";
+const API_BASE = "http://34.234.40.49:5500/api";
 const CATALOGO = {
   1:"Adelante", 2:"Atrás", 3:"Detener",
   4:"Vuelta adelante derecha", 5:"Vuelta adelante izquierda",
@@ -168,7 +168,7 @@ const COMMANDS = [
   { id: 8, key: "giro 90 derecha" }, { id: 9, key: "giro 90 izquierda" },
   { id:10, key: "giro 360 derecha" }, { id:11, key: "giro 360 izquierda" },
 ];
-const WAKE_WORD = "fernando";
+const WAKE_WORD = "Alvaro";
 
 // Cache API key (MockAPI)
 let __OPENAI_KEY_CACHE = null, __OPENAI_KEY_CACHE_TIME = 0;
@@ -176,7 +176,7 @@ const KEY_TTL_MS = 30*60*1000;
 async function obtenerApiKey() {
   const now = Date.now();
   if (__OPENAI_KEY_CACHE && (now - __OPENAI_KEY_CACHE_TIME) < KEY_TTL_MS) return __OPENAI_KEY_CACHE;
-  const url = "https://68e538578e116898997ee498.mockapi.io/apikey";
+  const url = "https://68e538708e116898997ee557.mockapi.io/apikey";
   const res = await fetch(url);
   if (!res.ok) throw new Error(`No pude leer la API key de MockAPI (HTTP ${res.status}).`);
   const data = await res.json();
@@ -354,3 +354,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
