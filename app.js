@@ -37,36 +37,32 @@ async function postMovimiento(id_movimiento) {
   const res = await fetch(`${API_BASE}/movimientos`, {
     method: "POST",
     headers: { "Content-Type":"application/json" },
-    body: JSON.stringify({ id_movimiento })
+    body: JSON.stringify({ id_movimiento })   // ✔ CORRECTO
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    console.error("POST ERROR:", err);
     throw new Error(err.message || `Error HTTP ${res.status}`);
   }
+
   return res.json();
 }
 
 async function getUltimoMovimiento() {
   const res = await fetch(`${API_BASE}/movimientos/ultimo`);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Error HTTP ${res.status}`);
-  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 async function getMovimientos(n = 20) {
   const res = await fetch(`${API_BASE}/movimientos/historial?limit=${n}&offset=0`);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Error HTTP ${res.status}`);
-  }
-  return res.json();
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json(); 
 }
 
 // =========================
-// Render para tabla y modal
+// Render tabla
 // =========================
 function renderMovimientos(rows = []) {
   const modalBody = document.getElementById("movimientos-body");
@@ -80,14 +76,13 @@ function renderMovimientos(rows = []) {
     html = `
       <tr>
         <td colspan="3" class="text-center text-muted py-3">Sin registros</td>
-      </tr>
-    `;
+      </tr>`;
   } else {
     html = rows.map(r => `
       <tr>
-        <td><code>${r.id ?? ""}</code></td>
-        <td>${r.movimiento ?? "—"}</td>
-        <td>${r.fecha_hora ? new Date(r.fecha_hora).toLocaleString() : "—"}</td>
+        <td><code>${r.id}</code></td>
+        <td>${r.movimiento}</td>
+        <td>${new Date(r.fecha_hora).toLocaleString()}</td>
       </tr>
     `).join("");
   }
@@ -101,15 +96,13 @@ function renderMovimientos(rows = []) {
 }
 
 // =========================
-// Auto refresh general
+// Auto refresh
 // =========================
 async function cargarMovimientosGlobal() {
   try {
     const response = await getMovimientos(20);
-    const rows = Array.isArray(response?.data) ? response.data : [];
-    renderMovimientos(rows);
+    renderMovimientos(response.data ?? []);
   } catch (e) {
-    console.error("Error cargando historial:", e);
     renderMovimientos([]);
   }
 }
@@ -145,29 +138,12 @@ async function refrescarUltimo() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-
   document.querySelectorAll("[data-mov]").forEach(btn => {
     btn.addEventListener("click", () => enviarMovimiento(Number(btn.dataset.mov)));
   });
 
-  document.addEventListener("keydown", (e) => {
-    const k = e.key.toLowerCase();
-    if (k==="w") enviarMovimiento(1);
-    if (k==="s") enviarMovimiento(2);
-    if (k===" ") enviarMovimiento(3);
-    if (k==="e") enviarMovimiento(4);
-    if (k==="q") enviarMovimiento(5);
-    if (k==="c") enviarMovimiento(6);
-    if (k==="z") enviarMovimiento(7);
-    if (k==="d") enviarMovimiento(8);
-    if (k==="a") enviarMovimiento(9);
-    if (k==="x") enviarMovimiento(10);
-    if (k==="y") enviarMovimiento(11);
-  });
-
   showSection("control");
   refrescarUltimo();
-
 });
 
 // =========================
@@ -175,12 +151,6 @@ document.addEventListener("DOMContentLoaded", () => {
 // =========================
 const secControl = document.getElementById("panel-control");
 const secVoz = document.getElementById("panel-voz");
-
-document.getElementById("btnShowControl")
-  .addEventListener("click", () => showSection("control"));
-
-document.getElementById("btnShowVoz")
-  .addEventListener("click", () => showSection("voz"));
 
 function showSection(which){
   if(which === "voz"){
@@ -192,10 +162,14 @@ function showSection(which){
   }
 }
 
-// ====================================
-// PANEL DE VOZ — ***VERSIÓN FUNCIONAL***
-// ====================================
+document.getElementById("btnShowControl").onclick = () => showSection("control");
+document.getElementById("btnShowVoz").onclick = () => showSection("voz");
+
+// =============================================================
+// PANEL DE VOZ
+// =============================================================
 const OPENAI_MODEL = "gpt-4o-mini";
+const WAKE_WORD = "alvaro";
 
 const COMMANDS = [
   { id: 1, key: "adelante" },
@@ -211,35 +185,28 @@ const COMMANDS = [
   { id:11, key: "giro 360 izquierda" },
 ];
 
-// PALABRA CLAVE NORMALIZADA (sin acento)
-const WAKE_WORD = "alvaro";
+// Obtener API key desde MockAPI
+let KEY_CACHE = null, KEY_TIME = 0;
+const KEY_TTL = 30 * 60 * 1000;
 
-// MockAPI Key
-let __OPENAI_KEY_CACHE = null;
-let __OPENAI_KEY_CACHE_TIME = 0;
-const KEY_TTL_MS = 30 * 60 * 1000;
-
-async function obtenerApiKey() {
+async function obtenerApiKey(){
   const now = Date.now();
-  if (__OPENAI_KEY_CACHE && (now - __OPENAI_KEY_CACHE_TIME) < KEY_TTL_MS)
-    return __OPENAI_KEY_CACHE;
+
+  if(KEY_CACHE && now - KEY_TIME < KEY_TTL) return KEY_CACHE;
 
   const res = await fetch("https://68e538708e116898997ee557.mockapi.io/apikey");
   const data = await res.json();
-  const first = Array.isArray(data) ? data[0] : data;
+  const apiKey = data[0]?.apikey?.trim();
 
-  const apiKey = first?.apikey ?? first?.key ?? first?.token;
-  if (!apiKey) throw new Error("MockAPI no tiene API Key válida.");
+  KEY_CACHE = apiKey;
+  KEY_TIME = now;
 
-  __OPENAI_KEY_CACHE = apiKey.trim();
-  __OPENAI_KEY_CACHE_TIME = now;
-  return __OPENAI_KEY_CACHE;
+  return apiKey;
 }
 
-// Reconocimiento de voz
+// Reconocimiento de Voz
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec = null;
-let listening = false;
+let rec = null, listening = false;
 
 const el = {
   btn: document.getElementById("btnToggle"),
@@ -254,68 +221,59 @@ const el = {
 function setMicState(on){
   listening = on;
   el.micState.textContent = on ? "Mic ON" : "Mic OFF";
-  el.btn.textContent = on ? "🛑 Detener" : "🎙️ Iniciar";
-  el.btn.disabled = false;
+  el.btn.innerHTML = on ? "🛑 Detener" : "🎙️ Iniciar";
 }
 
 function initRecognition(){
-  if (!SpeechRec){
-    alert("Tu navegador no soporta reconocimiento de voz.");
-    return;
-  }
-
   rec = new SpeechRec();
   rec.lang = "es-MX";
   rec.interimResults = true;
   rec.continuous = true;
 
-  rec.onend = () => {
-    if (listening) setTimeout(() => rec.start(), 300);
-  };
-
-  rec.onerror = err => {
-    console.warn("Speech error:", err);
-    setMicState(false);
-  };
-
-  // ==========================================
-  // 🔥 RECONOCIMIENTO FINAL 100% FUNCIONAL
-  // ==========================================
   rec.onresult = (e) => {
-    const transcript = Array.from(e.results)
-      .map(r => r[0].transcript)
-      .join(" ")
-      .trim();
+    const text = Array.from(e.results).map(r => r[0].transcript).join(" ").trim();
+    if(!text) return;
 
-    if (!transcript) return;
+    el.lastHeard.textContent = text;
 
-    el.lastHeard.textContent = transcript;
+    const t = text.toLowerCase();
+    const idx = t.indexOf(WAKE_WORD);
+    if(idx === -1) return;
 
-    const normalized = transcript
-      .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    const order = text.slice(idx + WAKE_WORD.length).trim();
+    if(order.length < 1) return;
 
-    const wakeIndex = normalized.indexOf(WAKE_WORD);
-    if (wakeIndex === -1) return;
-
-    const afterWake = normalized.slice(wakeIndex + WAKE_WORD.length).trim();
-    if (afterWake.length < 1) return;
-
-    const isFinal = e.results[e.results.length - 1].isFinal;
-    if (isFinal) classifyAndAct(afterWake);
+    const final = e.results[e.resultIndex].isFinal;
+    if(final) classifyAndAct(order);
   };
+
+  rec.onerror = () => setMicState(false);
+  rec.onend = () => { if(listening) rec.start(); };
 }
 
-function localClassify(txt){
-  const t = txt.toLowerCase();
-  if (t.includes("alto") || t.includes("detener")) return { id:3, key:"detener" };
-  if (t.includes("adelante")) return { id:1, key:"adelante" };
-  if (t.includes("atrás") || t.includes("atras") || t.includes("retrocede")) return { id:2, key:"atrás" };
-  return { id:3, key:"detener" };
+// Normalizador
+function normalize(s){
+  return s.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^\w\s]/g," ")
+    .replace(/\s+/g," ")
+    .trim();
 }
 
-async function classifyAndAct(userText){
-  el.detected.textContent = "Analizando…";
+// Clasificador local de respaldo
+function localClassify(t){
+  t = normalize(t);
+
+  if(t.includes("detener") || t.includes("alto")) return {id:3, key:"detener"};
+  if(t.includes("adelante")) return {id:1, key:"adelante"};
+  if(t.includes("atras") || t.includes("retrocede")) return {id:2, key:"atrás"};
+
+  return {id:3, key:"detener"};
+}
+
+// Clasificación con OpenAI
+async function classifyAndAct(txt){
+  el.detected.textContent = "Analizando...";
   el.action.textContent = "…";
 
   try {
@@ -323,12 +281,12 @@ async function classifyAndAct(userText){
 
     const payload = {
       model: OPENAI_MODEL,
-      messages: [
-        { role:"system", content:"Devuelve solo JSON con {command_id, command_key}" },
-        { role:"user", content:userText }
+      messages:[
+        {role:"system", content:`Responde SOLO {"command_id":1..11, "command_key":"texto"}`},
+        {role:"user", content:txt}
       ],
       temperature:0,
-      response_format:{ type:"json_object" }
+      response_format:{type:"json_object"}
     };
 
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -337,34 +295,34 @@ async function classifyAndAct(userText){
         "Content-Type":"application/json",
         "Authorization":`Bearer ${apiKey}`
       },
-      body: JSON.stringify(payload)
+      body:JSON.stringify(payload)
     });
 
-    if (!res.ok) throw new Error("OpenAI Error");
-
     const data = await res.json();
-    const raw = data?.choices?.[0]?.message?.content ?? "";
+    const raw = data.choices[0].message.content;
     const parsed = JSON.parse(raw);
 
-    const match = COMMANDS.find(c => c.id === parsed.command_id);
-    const key = match?.key || parsed.command_key;
+    const cmd = COMMANDS.find(c => c.id === parsed.command_id);
+    const key = cmd?.key || parsed.command_key;
 
     el.detected.textContent = `${parsed.command_id} — ${key}`;
+
     performAction(parsed.command_id, key);
 
-  } catch(err){
-    const fallback = localClassify(userText);
-    el.detected.textContent = `${fallback.id} — ${fallback.key}`;
-    performAction(fallback.id, fallback.key);
+  } catch (e) {
+    const f = localClassify(txt);
+    el.detected.textContent = `${f.id} — ${f.key}`;
+    performAction(f.id, f.key);
   }
 }
 
+// Actualizar estatus en panel de voz
 function setStatusVoz(texto, fecha = null){
   el.statusVoz.textContent = (texto || "—").toUpperCase();
-  el.timestampVoz.textContent =
-    fecha ? new Date(fecha).toLocaleString() : "";
+  el.timestampVoz.textContent = fecha ? new Date(fecha).toLocaleString() : "";
 }
 
+// Ejecutar la orden
 function performAction(id, key){
   el.action.textContent = `Ejecutando: ${key}`;
 
@@ -374,42 +332,21 @@ function performAction(id, key){
       cargarMovimientosGlobal();
       showToast(`Registrado: ${key}`);
     })
-    .catch(() => showToast("Error registrando"));
+    .catch(e => showToast("Error registrando"));
 }
 
+// Inicio
 document.addEventListener("DOMContentLoaded", () => {
+  initRecognition();
 
-  el.btn.addEventListener("click", async () => {
-    if (!rec) initRecognition();
-
-    try {
-      el.btn.disabled = true;
-
-      if (!listening){
-        await rec.start();
-        setMicState(true);
-      } else {
-        rec.stop();
-        setMicState(false);
-      }
-
-    } catch(err){
-      console.error("Mic start error:", err);
-      showToast("No se pudo acceder al micrófono");
+  el.btn.onclick = () => {
+    if(!rec) initRecognition();
+    if(!listening){
+      rec.start();
+      setMicState(true);
+    } else {
+      rec.stop();
       setMicState(false);
     }
-  });
-
-  initRecognition();
+  };
 });
-
-
-
-
-
-
-
-
-
-
-
