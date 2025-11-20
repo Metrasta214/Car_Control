@@ -92,3 +92,42 @@
     display:block;
   }
 }
+
+
+body {
+  background: #f8f9fa;
+}
+
+.btn-control {
+  width: 120px;
+  height: 120px;
+}
+
+.stop-btn {
+  background: #d9534f;
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+}
+
+.stop-square {
+  background: white;
+  width: 40px;
+  height: 40px;
+  display: inline-block;
+  border-radius: 6px;
+}
+
+.mono {
+  font-family: monospace;
+  font-size: 1.1rem;
+}
+
+.historial-card table td {
+  font-size: 0.9rem;
+}
+
+#panel-voz .card h5 {
+  margin-bottom: 0.5rem;
+}
+
