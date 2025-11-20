@@ -1,7 +1,8 @@
 // =========================
 // Config / Catálogo
 // =========================
-const API_BASE = "http://34.234.40.49:5500/api"; // Corrige tu URL real
+const API_BASE = "http://34.234.40.49:5500/api"; // corrige si tu IP cambiara
+
 const CATALOGO = {
   1:"Adelante", 2:"Atrás", 3:"Detener",
   4:"V. adelante der.", 5:"V. adelante izq.",
@@ -62,7 +63,7 @@ async function getMovimientos(n = 20) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || `Error HTTP ${res.status}`);
   }
-  return res.json();
+  return res.json(); // devuelve {data:[...]}
 }
 
 // ============================================================
@@ -84,7 +85,7 @@ function renderMovimientos(rows = []) {
   } else {
     html = rows.map(r => {
       const id = r.id ?? "";
-      const mov = r.movimiento ?? r.descripcion ?? "—";
+      const mov = r.movimiento ?? "—";
       const fh = r.fecha_hora ? new Date(r.fecha_hora).toLocaleString() : "—";
 
       return `
@@ -110,9 +111,15 @@ function renderMovimientos(rows = []) {
 // ============================================================
 async function cargarMovimientosGlobal() {
   try {
-    const { data } = await getMovimientos(20);
-    renderMovimientos(data || []);
-  } catch {
+    const response = await getMovimientos(20);
+
+    // tu backend regresa: { data: [...] }
+    const rows = Array.isArray(response?.data) ? response.data : [];
+
+    renderMovimientos(rows);
+
+  } catch (e) {
+    console.error("Error cargando historial:", e);
     renderMovimientos([]);
   }
 }
@@ -131,6 +138,7 @@ async function enviarMovimiento(idMov) {
     await postMovimiento(idMov);
     showToast(`Enviado: ${CATALOGO[idMov]}`);
     await refrescarUltimo();
+    cargarMovimientosGlobal();
   } catch (e) {
     showToast(`Error: ${e.message}`);
   }
@@ -143,7 +151,7 @@ async function refrescarUltimo() {
       setStatus(data.movimiento, data.fecha_hora);
       setStatusVoz(data.movimiento, data.fecha_hora);
     }
-  } catch (e) { /* Silencioso */ }
+  } catch (e) {}
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -203,10 +211,10 @@ const COMMANDS = [
   { id:10, key: "giro 360 derecha" }, { id:11, key: "giro 360 izquierda" },
 ];
 
-// Palabra de activación
+// NUEVA palabra de activación
 const WAKE_WORD = "alvaro";
 
-// MockAPI KEY cache
+// Cache API KEY de MockAPI
 let __OPENAI_KEY_CACHE = null, __OPENAI_KEY_CACHE_TIME = 0;
 const KEY_TTL_MS = 30 * 60 * 1000;
 
@@ -216,11 +224,11 @@ async function obtenerApiKey() {
   if (__OPENAI_KEY_CACHE && (now - __OPENAI_KEY_CACHE_TIME) < KEY_TTL_MS)
     return __OPENAI_KEY_CACHE;
 
-  // Cambia esta URL a tu MockAPI real
+  // coloca tu URL real aquí
   const url = "https://68e538708e116898997ee557.mockapi.io/apikey";
 
   const res = await fetch(url);
-  if (!res.ok) throw new Error("No pude leer la API Key.");
+  if (!res.ok) throw new Error("No pude leer la API Key de MockAPI.");
 
   const data = await res.json();
   const first = Array.isArray(data) ? data[0] : data;
@@ -232,7 +240,7 @@ async function obtenerApiKey() {
     first?.token ??
     first?.["api key"];
 
-  if (!apiKey) throw new Error("MockAPI no tiene API key válida.");
+  if (!apiKey) throw new Error("MockAPI no tiene un campo válido con API key.");
 
   __OPENAI_KEY_CACHE = apiKey.trim();
   __OPENAI_KEY_CACHE_TIME = now;
@@ -240,7 +248,7 @@ async function obtenerApiKey() {
   return __OPENAI_KEY_CACHE;
 }
 
-// Text-to-speech
+// TTS
 const speak = (text) => {
   if (!document.getElementById("chkTTS").checked) return;
   const u = new SpeechSynthesisUtterance(text);
@@ -285,6 +293,7 @@ function initRecognition(){
 
   rec.onresult = async (e) => {
     const idx = e.resultIndex;
+
     const transcript = Array.from(e.results)
       .slice(idx)
       .map(r => r[0].transcript)
@@ -308,14 +317,8 @@ function initRecognition(){
     if (isFinal) classifyAndAct(afterWake);
   };
 
-  rec.onerror = (ev) => {
-    el.action.textContent = `Error de micrófono: ${ev.error}`;
-    setMicState(false);
-  };
-
-  rec.onend = () => {
-    if (listening) rec.start();
-  };
+  rec.onerror = () => setMicState(false);
+  rec.onend = () => { if (listening) rec.start(); };
 }
 
 function normalize(s){
@@ -388,22 +391,16 @@ Responde SOLO:
     performAction(parsed.command_id, key);
 
   } catch (err) {
-    console.warn("OpenAI/MockAPI error:", err);
-
     const local = localClassify(userText);
     el.detected.textContent = `${local.id} — ${local.key}`;
     performAction(local.id, local.key);
-
-    el.action.textContent = `Detalle: ${String(err).slice(0,200)}…`;
   }
 }
 
 function setStatusVoz(texto, fecha = null) {
-  const elText = document.getElementById("status-voz");
-  const elTs = document.getElementById("timestamp-voz");
-
-  elText.textContent = (texto || "—").toUpperCase();
-  elTs.textContent = fecha ? new Date(fecha).toLocaleString() : "";
+  document.getElementById("status-voz").textContent = (texto || "—").toUpperCase();
+  document.getElementById("timestamp-voz").textContent =
+    fecha ? new Date(fecha).toLocaleString() : "";
 }
 
 function performAction(id, key){
@@ -415,22 +412,23 @@ function performAction(id, key){
       cargarMovimientosGlobal();
       showToast(`Registrado: ${key}`);
     })
-    .catch(err => {
-      showToast(`No se pudo registrar: ${err.message}`);
-    });
+    .catch(() => showToast("Error registrando movimiento"));
 
   const confirmations = {
     1:"Avanzando.", 2:"Retrocediendo.", 3:"Deteniendo.",
-    4:"Adelante con giro a la derecha.", 5:"Adelante con giro a la izquierda.",
-    6:"Atrás con giro a la derecha.", 7:"Atrás con giro a la izquierda.",
-    8:"Giro noventa grados a la derecha.", 9:"Giro noventa grados a la izquierda.",
-    10:"Giro completo a la derecha.", 11:"Giro completo a la izquierda."
+    4:"Adelante con giro a la derecha.",
+    5:"Adelante con giro a la izquierda.",
+    6:"Atrás con giro a la derecha.",
+    7:"Atrás con giro a la izquierda.",
+    8:"Giro noventa grados a la derecha.",
+    9:"Giro noventa grados a la izquierda.",
+    10:"Giro completo a la derecha.",
+    11:"Giro completo a la izquierda."
   };
 
   speak(confirmations[id] || "Listo.");
 }
 
-// Iniciar reconocimiento
 document.addEventListener("DOMContentLoaded", () => {
   initRecognition();
 
@@ -449,7 +447,7 @@ document.addEventListener("DOMContentLoaded", () => {
         rec.start();
         setMicState(true);
         speak("Listo. Di Álvaro y tu orden.");
-      } catch (e){
+      } catch {
         setMicState(false);
       }
 
@@ -459,6 +457,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+
 
 
 
