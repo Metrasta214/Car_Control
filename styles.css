@@ -58,71 +58,155 @@
 }
 
 
-/* PANEL DE VOZ (ESTILO ORIGINAL) */
+/* ==========================================================
+   PANEL DE VOZ — TEMA BLANCO / ESTILO UNIFICADO
+   ========================================================== */
+
+#panel-voz {
+  background: #fff;
+  padding: 2rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+/* Contenedor */
 .voz-wrap {
-  max-width: 650px;
+  max-width: 700px;
   margin: auto;
 }
 
+/* Encabezado */
+#panel-voz h2 {
+  font-weight: 600;
+  color: #111;
+}
+
+#panel-voz .subtitle {
+  font-size: 0.95rem;
+  color: #555;
+}
+
+/* Panel */
 .panel {
-  background: #ffffff0a;
-  padding: 1.5rem;
-  border-radius: 1rem;
-  border: 1px solid #ffffff20;
+  background:#fff;
+  padding:1.5rem;
+  border-radius:14px;
+  border:1px solid #ddd;
+  box-shadow:0 2px 10px rgba(0,0,0,0.05);
 }
 
-.rowflex {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
+/* Botón iniciar/detener */
 .vbtn {
-  background: #222;
-  color: white;
-  padding: .7rem 1.3rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.1rem;
+  background:#111;
+  color:#fff;
+  border:none;
+  padding:0.8rem 1.4rem;
+  font-size:1.1rem;
+  border-radius:8px;
+  cursor:pointer;
+  transition:0.2s;
+}
+.vbtn:hover {
+  opacity:0.9;
 }
 
+/* Switch */
 .switch {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+  color:#222;
+  font-size:0.95rem;
 }
 
+/* Estado del micrófono */
 .pill {
-  background: rgba(255,255,255,.1);
-  padding: .25rem .7rem;
-  border-radius: 999px;
-  font-size: .85rem;
+  display:inline-block;
+  padding:0.35rem 1rem;
+  border-radius:20px;
+  font-size:0.85rem;
+  font-weight:600;
+  color:#fff;
+  background:#999;
+}
+.pill.bg-success { background:#16a34a !important; }
+.pill.bg-secondary { background:#9ca3af !important; }
+
+/* Wake word */
+.wake {
+  margin-top:5px;
+  font-size:0.9rem;
+  color:#444;
 }
 
+/* Tarjetas */
 .cardv {
-  border: 1px solid rgba(255,255,255,.12);
-  padding: 1rem;
-  border-radius: 1rem;
-  background: rgba(255,255,255,0.04);
-  box-shadow: 0 0 12px #0002;
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:1rem;
+  margin-bottom:1rem;
+  box-shadow:0 2px 10px rgba(0,0,0,0.04);
 }
 
+.cardv h3 {
+  font-size:1rem;
+  margin-bottom:0.5rem;
+  color:#111;
+  font-weight:600;
+}
+
+.cardv p {
+  margin:0;
+  color:#222;
+}
+
+.status {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:1rem;
+}
+
+/* Grid de cards */
 .cards {
-  display: grid;
-  gap: 1rem;
-  margin-top: 1rem;
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:1rem;
 }
 
-.cards .cardv {
-  text-align: center;
-}
-
+/* Texto monoespaciado */
 .mono {
-  font-family: "Consolas","Courier New",monospace;
-  font-size: .95rem;
+  font-family:"Consolas", "Courier New", monospace;
+  font-size:0.9rem;
+  color:#333;
 }
 
-.help {
-  margin-top: 1rem;
-  font-size: .9rem;
+/* Sección de ayuda */
+.help summary {
+  cursor:pointer;
+  font-weight:600;
+  color:#222;
 }
+.help ol {
+  margin-top:0.5rem;
+  padding-left:1.4rem;
+  color:#333;
+  font-size:0.9rem;
+}
+
+/* Footer */
+.footer-voz {
+  margin-top:1.5rem;
+  font-size:0.85rem;
+  color:#555;
+}
+
+/* Responsive */
+@media (max-width:780px){
+  .cards {
+    grid-template-columns:1fr;
+  }
+}
+
