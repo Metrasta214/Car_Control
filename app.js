@@ -1,7 +1,7 @@
 // =========================
 // Config / Catálogo
 // =========================
-const API_BASE = "http://34.234.40.49:5500/api"; // corrige si tu IP cambiara
+const API_BASE = "http://34.234.40.49:5500/api"; // ajusta si cambia
 
 const CATALOGO = {
   1:"Adelante", 2:"Atrás", 3:"Detener",
@@ -199,22 +199,29 @@ function showSection(which){
 }
 
 // =========================
-// ---- Panel de Voz ----
+// ---- Panel de Voz (sin TTS) ----
 // =========================
 const OPENAI_MODEL = "gpt-4o-mini";
 
+// Comandos
 const COMMANDS = [
-  { id: 1, key: "adelante" }, { id: 2, key: "atrás" }, { id: 3, key: "detener" },
-  { id: 4, key: "vuelta adelante derecha" }, { id: 5, key: "vuelta adelante izquierda" },
-  { id: 6, key: "vuelta atrás derecha" }, { id: 7, key: "vuelta atrás izquierda" },
-  { id: 8, key: "giro 90 derecha" }, { id: 9, key: "giro 90 izquierda" },
-  { id:10, key: "giro 360 derecha" }, { id:11, key: "giro 360 izquierda" },
+  { id: 1, key: "adelante" },
+  { id: 2, key: "atrás" },
+  { id: 3, key: "detener" },
+  { id: 4, key: "vuelta adelante derecha" },
+  { id: 5, key: "vuelta adelante izquierda" },
+  { id: 6, key: "vuelta atrás derecha" },
+  { id: 7, key: "vuelta atrás izquierda" },
+  { id: 8, key: "giro 90 derecha" },
+  { id: 9, key: "giro 90 izquierda" },
+  { id:10, key: "giro 360 derecha" },
+  { id:11, key: "giro 360 izquierda" },
 ];
 
-// NUEVA palabra de activación
+// Palabra clave
 const WAKE_WORD = "alvaro";
 
-// Cache API KEY de MockAPI
+// MockAPI key cache
 let __OPENAI_KEY_CACHE = null, __OPENAI_KEY_CACHE_TIME = 0;
 const KEY_TTL_MS = 30 * 60 * 1000;
 
@@ -224,7 +231,7 @@ async function obtenerApiKey() {
   if (__OPENAI_KEY_CACHE && (now - __OPENAI_KEY_CACHE_TIME) < KEY_TTL_MS)
     return __OPENAI_KEY_CACHE;
 
-  // coloca tu URL real aquí
+  // PON AQUÍ tu URL real
   const url = "https://68e538708e116898997ee557.mockapi.io/apikey";
 
   const res = await fetch(url);
@@ -248,15 +255,6 @@ async function obtenerApiKey() {
   return __OPENAI_KEY_CACHE;
 }
 
-// TTS
-const speak = (text) => {
-  if (!document.getElementById("chkTTS").checked) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "es-MX";
-  speechSynthesis.cancel();
-  speechSynthesis.speak(u);
-};
-
 // Reconocimiento de voz
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, listening = false;
@@ -274,9 +272,14 @@ const el = {
 function setMicState(on){
   listening = on;
   el.micState.textContent = on ? "Mic ON" : "Mic OFF";
-  el.micState.style.background = on ? "rgba(41,211,152,.18)" : "rgba(255,255,255,.06)";
-  el.micState.style.color = on ? "#29d398" : "#c9d1e6";
-  el.btn.textContent = on ? "🛑 Detener" : "🎙️ Iniciar";
+
+  el.micState.classList.remove("bg-secondary","bg-success");
+  el.micState.classList.add(on ? "bg-success" : "bg-secondary");
+
+  el.btn.innerHTML = on
+    ? `<i class="bi bi-stop-circle"></i> Detener escucha`
+    : `<i class="bi bi-mic-fill"></i> Iniciar escucha`;
+
   el.btn.disabled = false;
 }
 
@@ -321,6 +324,7 @@ function initRecognition(){
   rec.onend = () => { if (listening) rec.start(); };
 }
 
+// Normalizar texto
 function normalize(s){
   return s.toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
@@ -329,6 +333,7 @@ function normalize(s){
     .trim();
 }
 
+// Clasificador local (backup)
 function localClassify(text){
   const t = normalize(text);
 
@@ -345,6 +350,7 @@ function localClassify(text){
   return {id:3, key:"detener"};
 }
 
+// Clasificar orden
 async function classifyAndAct(userText){
   el.detected.textContent = "Analizando…";
   el.action.textContent = "…";
@@ -397,12 +403,14 @@ Responde SOLO:
   }
 }
 
+// Actualizar estatus de voz
 function setStatusVoz(texto, fecha = null) {
-  document.getElementById("status-voz").textContent = (texto || "—").toUpperCase();
-  document.getElementById("timestamp-voz").textContent =
+  el.statusVoz.textContent = (texto || "—").toUpperCase();
+  el.timestampVoz.textContent =
     fecha ? new Date(fecha).toLocaleString() : "";
 }
 
+// Ejecutar la acción detectada
 function performAction(id, key){
   el.action.textContent = `Ejecutando: ${key}`;
 
@@ -413,40 +421,24 @@ function performAction(id, key){
       showToast(`Registrado: ${key}`);
     })
     .catch(() => showToast("Error registrando movimiento"));
-
-  const confirmations = {
-    1:"Avanzando.", 2:"Retrocediendo.", 3:"Deteniendo.",
-    4:"Adelante con giro a la derecha.",
-    5:"Adelante con giro a la izquierda.",
-    6:"Atrás con giro a la derecha.",
-    7:"Atrás con giro a la izquierda.",
-    8:"Giro noventa grados a la derecha.",
-    9:"Giro noventa grados a la izquierda.",
-    10:"Giro completo a la derecha.",
-    11:"Giro completo a la izquierda."
-  };
-
-  speak(confirmations[id] || "Listo.");
 }
 
+// Iniciar reconocimiento
 document.addEventListener("DOMContentLoaded", () => {
   initRecognition();
 
-  const btn = document.getElementById("btnToggle");
-
-  btn.addEventListener("click", () => {
+  el.btn.addEventListener("click", () => {
     if (!rec){
       alert("Tu navegador no soporta Web Speech API.");
       return;
     }
 
-    btn.disabled = true;
+    el.btn.disabled = true;
 
     if (!listening){
       try {
         rec.start();
         setMicState(true);
-        speak("Listo. Di Álvaro y tu orden.");
       } catch {
         setMicState(false);
       }
@@ -457,6 +449,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
 
 
