@@ -1,7 +1,7 @@
 // =========================
 // Config / Catálogo
 // =========================
-const API_BASE = "http://34.234.40.49:5500/api"; // ajusta si cambia
+const API_BASE = "http://34.234.40.49:5500/api";
 
 const CATALOGO = {
   1:"Adelante", 2:"Atrás", 3:"Detener",
@@ -44,7 +44,6 @@ async function postMovimiento(id_movimiento) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || `Error HTTP ${res.status}`);
   }
-
   return res.json();
 }
 
@@ -63,12 +62,12 @@ async function getMovimientos(n = 20) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || `Error HTTP ${res.status}`);
   }
-  return res.json(); // devuelve {data:[...]}
+  return res.json();
 }
 
-// ============================================================
-// Render universal — tabla fija + modal
-// ============================================================
+// =========================
+// Render para tabla fija + modal
+// =========================
 function renderMovimientos(rows = []) {
   const modalBody = document.getElementById("movimientos-body");
   const fixedBody = document.getElementById("historial-body");
@@ -81,21 +80,16 @@ function renderMovimientos(rows = []) {
     html = `
       <tr>
         <td colspan="3" class="text-center text-muted py-3">Sin registros</td>
-      </tr>`;
+      </tr>
+    `;
   } else {
-    html = rows.map(r => {
-      const id = r.id ?? "";
-      const mov = r.movimiento ?? "—";
-      const fh = r.fecha_hora ? new Date(r.fecha_hora).toLocaleString() : "—";
-
-      return `
-        <tr>
-          <td><code>${id}</code></td>
-          <td>${mov}</td>
-          <td>${fh}</td>
-        </tr>
-      `;
-    }).join("");
+    html = rows.map(r => `
+      <tr>
+        <td><code>${r.id ?? ""}</code></td>
+        <td>${r.movimiento ?? "—"}</td>
+        <td>${r.fecha_hora ? new Date(r.fecha_hora).toLocaleString() : "—"}</td>
+      </tr>
+    `).join("");
   }
 
   if (modalBody) modalBody.innerHTML = html;
@@ -106,18 +100,14 @@ function renderMovimientos(rows = []) {
   if (stampFixed) stampFixed.textContent = `Última actualización: ${now}`;
 }
 
-// ============================================================
-// Auto refresh universal
-// ============================================================
+// =========================
+// Auto refresh
+// =========================
 async function cargarMovimientosGlobal() {
   try {
     const response = await getMovimientos(20);
-
-    // tu backend regresa: { data: [...] }
     const rows = Array.isArray(response?.data) ? response.data : [];
-
     renderMovimientos(rows);
-
   } catch (e) {
     console.error("Error cargando historial:", e);
     renderMovimientos([]);
@@ -130,7 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // =========================
-// Lógica Panel de Control
+// Panel de Control
 // =========================
 async function enviarMovimiento(idMov) {
   try {
@@ -155,28 +145,29 @@ async function refrescarUltimo() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+
   document.querySelectorAll("[data-mov]").forEach(btn => {
     btn.addEventListener("click", () => enviarMovimiento(Number(btn.dataset.mov)));
   });
 
-  // Teclas rápidas
   document.addEventListener("keydown", (e) => {
     const k = e.key.toLowerCase();
-    if (k === "w") enviarMovimiento(1);
-    if (k === "s") enviarMovimiento(2);
-    if (k === " ") enviarMovimiento(3);
-    if (k === "e") enviarMovimiento(4);
-    if (k === "q") enviarMovimiento(5);
-    if (k === "c") enviarMovimiento(6);
-    if (k === "z") enviarMovimiento(7);
-    if (k === "d") enviarMovimiento(8);
-    if (k === "a") enviarMovimiento(9);
-    if (k === "x") enviarMovimiento(10);
-    if (k === "y") enviarMovimiento(11);
+    if (k==="w") enviarMovimiento(1);
+    if (k==="s") enviarMovimiento(2);
+    if (k===" ") enviarMovimiento(3);
+    if (k==="e") enviarMovimiento(4);
+    if (k==="q") enviarMovimiento(5);
+    if (k==="c") enviarMovimiento(6);
+    if (k==="z") enviarMovimiento(7);
+    if (k==="d") enviarMovimiento(8);
+    if (k==="a") enviarMovimiento(9);
+    if (k==="x") enviarMovimiento(10);
+    if (k==="y") enviarMovimiento(11);
   });
 
   showSection("control");
   refrescarUltimo();
+
 });
 
 // =========================
@@ -185,11 +176,14 @@ document.addEventListener("DOMContentLoaded", () => {
 const secControl = document.getElementById("panel-control");
 const secVoz = document.getElementById("panel-voz");
 
-document.getElementById("btnShowControl").addEventListener("click", () => showSection("control"));
-document.getElementById("btnShowVoz").addEventListener("click", () => showSection("voz"));
+document.getElementById("btnShowControl")
+  .addEventListener("click", () => showSection("control"));
+
+document.getElementById("btnShowVoz")
+  .addEventListener("click", () => showSection("voz"));
 
 function showSection(which){
-  if (which === "voz") {
+  if(which === "voz"){
     secControl.style.display = "none";
     secVoz.style.display = "";
   } else {
@@ -199,9 +193,8 @@ function showSection(which){
 }
 
 // =========================
-// ---- Panel de Voz (FUNCIONAL OK) ----
+// -------- PANEL DE VOZ --------
 // =========================
-
 const OPENAI_MODEL = "gpt-4o-mini";
 
 // Comandos
@@ -222,28 +215,23 @@ const COMMANDS = [
 // Palabra clave
 const WAKE_WORD = "alvaro";
 
-// API Key MockAPI
+// MockAPI KEY cache
 let __OPENAI_KEY_CACHE = null, __OPENAI_KEY_CACHE_TIME = 0;
 const KEY_TTL_MS = 30 * 60 * 1000;
 
 async function obtenerApiKey() {
   const now = Date.now();
-
   if (__OPENAI_KEY_CACHE && (now - __OPENAI_KEY_CACHE_TIME) < KEY_TTL_MS)
     return __OPENAI_KEY_CACHE;
 
-  const url = "https://68e538708e116898997ee557.mockapi.io/apikey"; // tu URL
-
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("No pude leer la API Key de MockAPI.");
+  const res = await fetch("https://68e538708e116898997ee557.mockapi.io/apikey");
+  if (!res.ok) throw new Error("No pude leer la API Key.");
 
   const data = await res.json();
   const first = Array.isArray(data) ? data[0] : data;
 
-  const apiKey =
-    first?.apikey ?? first?.api_key ?? first?.key ?? first?.token ?? first?.["api key"];
-
-  if (!apiKey) throw new Error("MockAPI no tiene un campo válido con API key.");
+  const apiKey = first?.apikey ?? first?.api_key ?? first?.key ?? first?.token;
+  if (!apiKey) throw new Error("MockAPI no tiene API Key válida.");
 
   __OPENAI_KEY_CACHE = apiKey.trim();
   __OPENAI_KEY_CACHE_TIME = now;
@@ -251,11 +239,10 @@ async function obtenerApiKey() {
   return __OPENAI_KEY_CACHE;
 }
 
-// =========================
-// Reconocimiento
-// =========================
+// Reconocimiento de voz
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec = null, listening = false;
+let rec = null;
+let listening = false;
 
 const el = {
   btn: document.getElementById("btnToggle"),
@@ -270,9 +257,8 @@ const el = {
 function setMicState(on){
   listening = on;
   el.micState.textContent = on ? "Mic ON" : "Mic OFF";
-
-  el.btn.disabled = false;
   el.btn.textContent = on ? "🛑 Detener" : "🎙️ Iniciar";
+  el.btn.disabled = false;
 }
 
 function initRecognition(){
@@ -286,7 +272,17 @@ function initRecognition(){
   rec.interimResults = true;
   rec.continuous = true;
 
-  rec.onresult = async (e) => {
+  // Reiniciar cuando Chrome corta la sesión
+  rec.onend = () => {
+    if (listening) setTimeout(() => rec.start(), 300);
+  };
+
+  rec.onerror = err => {
+    console.warn("Speech error:", err);
+    setMicState(false);
+  };
+
+  rec.onresult = (e) => {
     const transcript = Array.from(e.results)
       .map(r => r[0].transcript)
       .join(" ")
@@ -296,21 +292,18 @@ function initRecognition(){
 
     el.lastHeard.textContent = transcript;
 
-    const tLower = transcript.toLowerCase();
-    const wakeIdx = tLower.indexOf(WAKE_WORD);
+    const lower = transcript.toLowerCase();
+    const wakeIdx = lower.indexOf(WAKE_WORD);
 
     if (wakeIdx === -1) return;
 
     const afterWake = transcript.slice(wakeIdx + WAKE_WORD.length).trim();
-    if (afterWake.length < 2) return;
+    if (afterWake.length < 1) return;
 
     const isFinal = Array.from(e.results).pop().isFinal;
 
     if (isFinal) classifyAndAct(afterWake);
   };
-
-  rec.onerror = () => setMicState(false);
-  rec.onend = () => { if (listening) rec.start(); };
 }
 
 function normalize(s){
@@ -321,20 +314,16 @@ function normalize(s){
     .trim();
 }
 
-// =========================
-// Clasificador local (backup)
-// =========================
-function localClassify(text){
-  const t = normalize(text);
-  if (/\b(detener|alto|stop)\b/.test(t)) return {id:3, key:"detener"};
+function localClassify(txt){
+  const t = normalize(txt);
+
+  if (/\b(detener|alto)\b/.test(t)) return {id:3, key:"detener"};
   if (/\b(adelante|avanza)\b/.test(t)) return {id:1, key:"adelante"};
-  if (/\b(atras|reversa|retrocede)\b/.test(t)) return {id:2, key:"atrás"};
+  if (/\b(atras|retrocede)\b/.test(t)) return {id:2, key:"atrás"};
+
   return {id:3, key:"detener"};
 }
 
-// =========================
-// Clasificación
-// =========================
 async function classifyAndAct(userText){
   el.detected.textContent = "Analizando…";
   el.action.textContent = "…";
@@ -361,29 +350,27 @@ async function classifyAndAct(userText){
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok) throw new Error("OpenAI error");
+    if (!res.ok) throw new Error("OpenAI Error");
 
     const data = await res.json();
     const raw = data?.choices?.[0]?.message?.content ?? "";
     const parsed = JSON.parse(raw);
 
     const match = COMMANDS.find(c => c.id === parsed.command_id);
-    const key = match?.key || parsed.command_key || "desconocido";
+    const key = match?.key || parsed.command_key;
 
     el.detected.textContent = `${parsed.command_id} — ${key}`;
+
     performAction(parsed.command_id, key);
 
-  } catch (err) {
-    const local = localClassify(userText);
-    el.detected.textContent = `${local.id} — ${local.key}`;
-    performAction(local.id, local.key);
+  } catch(err){
+    const fallback = localClassify(userText);
+    el.detected.textContent = `${fallback.id} — ${fallback.key}`;
+    performAction(fallback.id, fallback.key);
   }
 }
 
-// =========================
-// Ejecutar movimiento
-// =========================
-function setStatusVoz(texto, fecha = null) {
+function setStatusVoz(texto, fecha = null){
   el.statusVoz.textContent = (texto || "—").toUpperCase();
   el.timestampVoz.textContent = fecha ? new Date(fecha).toLocaleString() : "";
 }
@@ -397,33 +384,36 @@ function performAction(id, key){
       cargarMovimientosGlobal();
       showToast(`Registrado: ${key}`);
     })
-    .catch(() => showToast("Error registrando movimiento"));
+    .catch(() => showToast("Error registrando"));
 }
 
-// =========================
-// Inicializar panel de voz
-// =========================
+// Iniciar reconocimiento
 document.addEventListener("DOMContentLoaded", () => {
 
-  el.btn.addEventListener("click", () => {
-    if (!rec){
-      alert("Tu navegador no soporta Web Speech API.");
-      return;
-    }
+  el.btn.addEventListener("click", async () => {
+    if (!rec) initRecognition();
 
-    el.btn.disabled = true;
+    try {
+      el.btn.disabled = true;
 
-    if (!listening){
-      rec.start();
-      setMicState(true);
-    } else {
-      rec.stop();
+      if (!listening){
+        await rec.start();
+        setMicState(true);
+      } else {
+        rec.stop();
+        setMicState(false);
+      }
+
+    } catch(err){
+      console.error("Mic start error:", err);
+      showToast("No se pudo acceder al micrófono");
       setMicState(false);
     }
   });
 
   initRecognition();
 });
+
 
 
 
