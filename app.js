@@ -98,7 +98,7 @@ function renderMovimientos(rows = []) {
 }
 
 // =========================
-// Auto refresh (optimizado)
+// Auto refresh DEL HISTORIAL (20 segundos)
 // =========================
 async function cargarMovimientosGlobal() {
   try {
@@ -109,14 +109,13 @@ async function cargarMovimientosGlobal() {
   }
 }
 
-// 🔥 Loop controlado en vez de setInterval
 async function loopHistorial() {
   await cargarMovimientosGlobal();
-  setTimeout(loopHistorial, 3000); // cada 3 segundos
+  setTimeout(loopHistorial, 20000); // 🔥 CADA 20 SEGUNDOS
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  loopHistorial();
+  loopHistorial(); // iniciar loop
 });
 
 // =========================
@@ -174,7 +173,7 @@ document.getElementById("btnShowControl").onclick = () => showSection("control")
 document.getElementById("btnShowVoz").onclick = () => showSection("voz");
 
 // =============================================================
-// PANEL DE VOZ (Corregido al 100%)
+// PANEL DE VOZ
 // =============================================================
 const WAKE_WORD = "álvaro";
 
@@ -203,7 +202,6 @@ function initRecognition(){
   rec.interimResults = true;
   rec.continuous = true;
 
-  // 🔥 FIX DEFINITIVO DEL PROCESAMIENTO DE VOZ 🔥
   rec.onresult = (e) => {
     const result = e.results[e.resultIndex];
     if (!result) return;
