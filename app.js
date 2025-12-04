@@ -98,7 +98,7 @@ function renderMovimientos(rows = []) {
 }
 
 // =========================
-// Auto refresh
+// Auto refresh (optimizado)
 // =========================
 async function cargarMovimientosGlobal() {
   try {
@@ -109,9 +109,14 @@ async function cargarMovimientosGlobal() {
   }
 }
 
+// 🔥 Loop controlado en vez de setInterval
+async function loopHistorial() {
+  await cargarMovimientosGlobal();
+  setTimeout(loopHistorial, 3000); // cada 3 segundos
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-  cargarMovimientosGlobal();
-  setInterval(cargarMovimientosGlobal, 2000);
+  loopHistorial();
 });
 
 // =========================
